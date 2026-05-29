@@ -1,0 +1,531 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap");
+
+body, .landing-root, .landing-root * {
+  font-family: 'Poppins', sans-serif !important;
+}
+
+body {
+  background-color: #FFF;
+  color: #707070;
+  font-family: Poppins;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+h2 {
+  margin: 0;
+  font-weight: 700;
+}
+
+h3 {
+  margin: 0;
+}
+
+span.h2-reg {
+  font-weight: 400;
+}
+
+p {
+  margin: 0;
+}
+
+img {
+  max-width: 100%;
+  object-fit: cover;
+  margin: 0;
+}
+
+button {
+  background-color: #D85E09;
+  padding: .5em 1.5em;
+  font-weight: 600;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* LANDING PAGE STYLES SCOPED */
+.landing-root nav {
+  width: 100%;
+  margin: 0;
+}
+
+.landing-root #navigation img {
+  width: 4rem;
+  margin-right: .5em;
+}
+
+.landing-root #navigation h1 {
+  display: flex;
+  align-items: center;
+  margin-right: 2.5em;
+  color: #FF7C34;
+  font-weight: 800;
+}
+
+.landing-root nav ul {
+  display: flex;
+  list-style-type: none;
+  align-items: center;
+  width: 100%;
+}
+
+.landing-root nav ul li {
+  margin: 0 1em;
+  font-weight: 600;
+}
+
+.landing-root #navigation {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-left: 15%;
+  padding-right: 15%;
+}
+
+.landing-root #about {
+  margin-right: auto;
+}
+
+.landing-root #log-in {
+  font-weight: 700;
+  color: #FF7C34;
+}
+
+.landing-root #sign-up {
+  margin-right: 0;
+}
+
+.landing-root nav li button {
+  font-weight: 700;
+}
+
+.landing-root #navigation nav ul li#log-in a {
+  color: #FF7C34 !important;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.landing-root #navigation nav ul li#log-in a:hover,
+.landing-root #navigation nav ul li#log-in a:active {
+  color: #ea580c !important;
+  text-decoration: none;
+}
+
+.landing-root #navigation #sign-up button {
+  background-color: #FF7C34 !important;
+  color: #FFF !important;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  padding: 0.5em 1.5em;
+  box-shadow: none;
+}
+
+/* HEADER */
+.landing-root header {
+  position: relative;
+  background-image: url("/images/landing-page/header-person.png"), url("/images/landing-page/header-bg.png");
+  background-position: 90% 100%, center;
+  background-size: 40em, cover;
+  background-repeat: no-repeat, no-repeat;
+  margin: 0;
+  padding-left: 15%;
+  padding-right: 15%;
+  display: flex;
+  color: #FFF;
+}
+
+.landing-root header button {
+  background-color: #FFF;
+  color: #D85E09;
+}
+
+.landing-root header h2 {
+  font-size: 3.5rem;
+  line-height: 4rem;
+  margin: 0;
+  margin-bottom: 0.25em;
+}
+
+.landing-root header p {
+  margin-bottom: 2em;
+}
+
+.landing-root #header-text {
+  margin: 10em 50% 10em 0;
+}
+
+.landing-root div.header-number {
+  display: flex;
+  position: absolute;
+  background-color: rgba(255,255,255,.75);
+  color: #4A4A4A;
+  padding: 0.75em 1em;
+  border-radius: 1em;
+  text-align: center;
+  align-items: center;
+  box-shadow: 0 4px 11px rgba(0,0,0,.35);
+}
+
+.landing-root div.header-number p {
+  font-weight: 500;
+  margin: 0;
+  line-height: 1em;
+}
+
+.landing-root div.header-number img#learners {
+  width: 7rem;
+  margin: 0;
+  margin-top: 0.5em;
+}
+
+.landing-root div.header-number img#book-icon {
+  width: 2rem;
+  margin: 0;
+  margin-right: .75em;
+}
+
+.landing-root div.course-number {
+  bottom: 40%;
+  right: 28%;
+}
+
+.landing-root div.learner-number {
+  bottom: 20%;
+  right: 15%;
+  flex-direction: column;
+}
+
+.landing-root span.number {
+  font-weight: 600;
+  color: #FF7C34;
+}
+
+@keyframes scroll-text-animation {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* TEXT ANIMATION */
+.landing-root div.text-animation {
+  width: 100vw;
+  overflow: hidden;
+  position: relative;
+}
+
+.landing-root div.text-animation ul {
+  background-color: #D85E09;
+  color: #FFF;
+  display: flex;
+  list-style-type: none;
+  font-size: 2rem;
+  font-weight: 600;
+  padding: .5em 0;
+  margin: 0;
+  width: max-content;
+  min-width: 200vw;
+  animation: scroll-text-animation 30s linear infinite;
+  will-change: transform;
+}
+
+.landing-root div.text-animation ul li {
+  margin: 0 3em 0 -1em;
+}
+
+/* DEVELOP SKILLS */
+.landing-root div#develop-skills {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10em 0;
+  padding-left: 15%;
+  padding-right: 15%;
+}
+
+.landing-root div#develop-skills ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.landing-root div#develop-skills h2 {
+  color: #FF7C34;
+  font-size: 3rem;
+}
+
+.landing-root div#develop-skills ul li {
+  display: flex;
+  font-weight: 600;
+  margin-bottom: 1.5em;
+  align-items: center;
+  font-size: 1.25em;
+}
+
+.landing-root div#develop-skills #computer {
+  width: 20rem;
+  margin-right: 5em;
+}
+
+.landing-root div#develop-skills img.check-mark {
+  width: 1.75rem;
+  margin-right: 1rem;
+}
+
+/* WHY CHOOSE THIS */
+.landing-root div#why-choose-this {
+  position: relative;
+  background-image: linear-gradient(120deg, #D85E09, #FFC482 130%, #FFC482);
+  color: #FFF;
+  display: flex;
+  align-items: center;
+  padding: 7% 55% 7% 15%;
+}
+
+.landing-root div#why-choose-this h2 {
+  font-size: 3rem;
+  line-height: 3rem;
+  margin: 0;
+  margin-bottom: 0.5em;
+}
+
+.landing-root img#why-choose-this-person {
+  position: absolute;
+  bottom: 0%;
+  right: 5%;
+  width: 40rem;
+}
+
+/* PROGRAMMING COURSES */
+.landing-root div#programming-courses {
+  padding: 7% 15% 7% 15%;
+}
+
+.landing-root div#programming-courses h2 {
+  font-size: 2.5rem;
+  line-height: 3rem;
+  margin: 0;
+  margin-bottom: 0.25em;
+  color: #FF7C34;
+}
+
+.landing-root div#programming-courses p {
+  margin-right: 10%;
+}
+
+.landing-root .courses {
+  display: flex;
+  justify-content: space-between;
+}
+
+.landing-root .courses-coding {
+  background-image: linear-gradient(145deg, #D85E09, #FFC482 180%, #FFC482);
+  padding: 1.5em 2em;
+  flex: 1;
+  margin-top: 1.5em;
+  border-radius: 1em;
+  color: #FFF;
+}
+
+.landing-root .algo {
+  margin-left: 1em;
+  margin-right: 1em;
+}
+
+.landing-root .courses-coding .clock {
+  width: 1rem;
+}
+
+.landing-root .courses-coding button {
+  background: none;
+  border: solid 1px white;
+  margin-top: 1em;
+}
+
+.landing-root .difficulty {
+  font-weight: 300;
+  line-height: 2em;
+}
+
+/* JOIN PLATFORM */
+.landing-root div#join-platform {
+  position: relative;
+  background-image: linear-gradient(120deg, #D85E09, #FFC482 130%, #FFC482);
+  color: #FFF;
+  display: flex;
+  flex-direction: column;
+  padding: 7% 45% 7% 15%;
+}
+
+.landing-root div#join-platform p {
+  font-size: 3rem;
+  line-height: 3.5rem;
+  margin: 0;
+  margin-top: 0.25em;
+  font-weight: 600;
+}
+
+.landing-root div#join-platform h2 {
+  font-weight: 400;
+}
+
+.landing-root img#ph-map {
+  position: absolute;
+  bottom: 0%;
+  right: 5%;
+  width: 33rem;
+}
+
+/* DIGITAL LITERACY COURSES */
+.landing-root div#digital-literacy-courses {
+  padding: 7% 15% 7% 15%;
+}
+
+.landing-root div#digital-literacy-courses h2 {
+  font-size: 2.5rem;
+  line-height: 3rem;
+  margin: 0;
+  margin-bottom: 0.25em;
+  color: #FF7C34;
+}
+
+.landing-root div#digital-literacy-courses #digital-description {
+  margin-right: 10%;
+}
+
+.landing-root #courses-digital-group {
+  display: flex;
+  justify-content: space-between;
+}
+
+.landing-root .courses-digital-literacy {
+  background-image: linear-gradient(145deg, #D85E09, #FFC482 180%, #FFC482);
+  flex: 1;
+  margin-top: 1.5em;
+  border-radius: 1em;
+  color: #FFF;
+}
+
+.landing-root .courses-digital-literacy .course-img {
+  height: 12rem;
+  width: 100%;
+  border-radius: 1em 1em 0 0;
+}
+
+.landing-root .courses-digital-literacy .course-description {
+  padding: 1.5em 2em;
+}
+
+.landing-root .finding-truth {
+  margin-left: 1em;
+  margin-right: 1em;
+}
+
+.landing-root .courses-digital-literacy h3 {
+  margin-top: .25em;
+}
+
+/* FOOTER */
+.landing-root footer {
+  background-color: #D85E09;
+  display: flex;
+  color: #FFF;
+  padding-left: 15%;
+  padding-right: 15%;
+  padding-top: 3em;
+  padding-bottom: 3em;
+  font-size: .8rem;
+}
+
+.landing-root footer h2 {
+  font-weight: 500;
+}
+
+.landing-root footer ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.landing-root footer h2 img {
+  width: 2rem;
+}
+
+.landing-root #brand-footer {
+  flex: 1.5;
+  padding-right: 6em;
+}
+
+.landing-root #brand-footer h2#logo {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.landing-root #brand-footer p#brand-description {
+  margin-top: 3em;
+  margin-bottom: 3em;
+  line-height: 1.75em;
+}
+
+.landing-root #about {
+  flex: 1;
+  padding-right: 2em;
+  line-height: 2.5em;
+}
+
+.landing-root #learn-more {
+  flex: 1;
+  padding-right: 2em;
+  line-height: 2.5em;
+}
+
+.landing-root #get-involved {
+  flex: 1;
+  line-height: 2.5em;
+}
+
+.landing-root #brand-footer p img {
+  width: 2rem;
+  margin-top: .75em;
+  margin-right: 1.25em;
+}
+
+/* HOME NAVBAR (keep global) */
+.home-navbar {
+  width: 100vw;
+  left: 0;
+  right: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-sizing: border-box;
+  background: #fff;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.03);
+}
+
+.fade-up-visible {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+  transition: opacity 0.8s cubic-bezier(0.4,0,0.2,1), transform 0.8s cubic-bezier(0.4,0,0.2,1);
+}
+
+#develop-skills,
+#why-choose-this,
+#programming-courses,
+#join-platform,
+#digital-literacy-courses {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.8s cubic-bezier(0.4,0,0.2,1), transform 0.8s cubic-bezier(0.4,0,0.2,1);
+}

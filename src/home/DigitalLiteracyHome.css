@@ -1,0 +1,233 @@
+/* Page layout */
+.digital-literacy-page {
+  font-family: "Poppins", sans-serif;
+  color: #333;
+}
+
+.digital-literacy-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  z-index: 100;
+}
+
+.header-logo {
+  font-size: 28px;
+  color: #d85e09;
+  font-weight: bold;
+}
+
+.header-nav a {
+  margin-right: 1.5rem;
+  text-decoration: none;
+  color: #000;
+  font-weight: 500;
+}
+
+.header-nav a.active {
+  border-bottom: 2px solid #d85e09;
+  padding-bottom: 4px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.header-icon {
+  background: none;
+  border: none;
+  font-size: 18px;
+  margin-right: 1rem;
+  cursor: pointer;
+}
+
+.header-profile {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.profile-circle {
+  width: 24px;
+  height: 24px;
+  background: #000;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+}
+
+.profile-arrow {
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.digital-literacy-main {
+  margin-top: 60px;
+  padding: 2rem;
+}
+
+.digital-literacy-content {
+  display: flex;
+  gap: 2rem;
+}
+
+/* LEFT SIDE */
+.digital-literacy-left {
+  flex: 1;
+}
+
+.breadcrumb {
+  font-size: 14px;
+  color: #999;
+  margin-bottom: 0.5rem;
+}
+
+.module-label {
+  color: #d85e09;
+  font-weight: 600;
+}
+
+.translate-btn {
+  background: #f1f1f1;
+  border: none;
+  padding: 0.5rem 1rem;
+  margin-top: 1rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.module-section {
+  margin-top: 2rem;
+}
+
+.module-section h2 {
+  font-size: 20px;
+  margin-bottom: 1rem;
+}
+
+ul {
+  padding-left: 1.5rem;
+}
+
+ul li {
+  margin-bottom: 0.5rem;
+}
+
+.did-you-know {
+  background: #fff3e0;
+  border-left: 4px solid #d85e09;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.did-you-know-title {
+  color: #d85e09;
+  font-weight: bold;
+}
+
+.video-placeholder {
+  background: #333;
+  width: 100%;
+  height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.youtube-icon {
+  width: 60px;
+  height: 40px;
+  background: red;
+  clip-path: polygon(10% 0%, 100% 50%, 10% 100%);
+}
+
+.transcript-label {
+  margin-top: 1rem;
+  font-weight: bold;
+}
+
+.transcript-btn {
+  background: #f79f60;
+  border: none;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  color: #fff;
+  font-weight: 600;
+}
+
+.question-block {
+  margin-top: 2rem;
+  border-top: 1px solid #eee;
+  padding-top: 1rem;
+}
+
+.question-text {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.radio-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.submit-btn {
+  margin-top: 0.5rem;
+  background: #666;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+.next-section {
+  margin-top: 2rem;
+  text-align: right;
+  color: #d85e09;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* SIDEBAR */
+.digital-literacy-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  background: #f9f9f9;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.digital-literacy-sidebar h3 {
+  margin-top: 0;
+}
+
+.course-outline-title {
+  font-weight: bold;
+  margin-top: 1rem;
+}
+
+.course-outline {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0 0;
+}
+
+.course-outline li {
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+}
+
+.course-outline li.active {
+  background: #ffe3cc;
+  font-weight: bold;
+}
