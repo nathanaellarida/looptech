@@ -9,6 +9,7 @@ import Editor from "@monaco-editor/react";
 import * as Y from "yjs";
 import { WebrtcProvider } from "y-webrtc";
 import { MonacoBinding } from "y-monaco";
+import { runInSandbox } from './sandboxRunner';
 import angryGif from './../../images/emotions/angry.gif';
 import disgustGif from './../../images/emotions/disgust.gif';
 import fearGif from './../../images/emotions/fear.gif';
@@ -647,15 +648,18 @@ const CodingCollab = () => {
     return pc
   }
 
-  function handleRun() {
+  async function handleRun() {
     if (!editorRef.current) return
     const code = editorRef.current.getValue()
-    const logs = []
-    try {
-      const runner = new Function('console', `"use strict";\n${code}`)
-      runner({ log: (...args) => logs.push(args.join(' ')), error: (...args) => logs.push('Error:' + args.join(' ')) })
-      setOutput(logs.join('\n') || '(no console output)')
-    } catch (err) { setOutput('Error:' + err.toString()) }
+    // Executes in a shared sandboxed iframe/worker — never on the app origin.
+    const { output: out, error, timedOut } = await runInSandbox(code)
+    if (timedOut) {
+      setOutput('Error: Execution timed out (possible infinite loop).')
+    } else if (error) {
+      setOutput((out ? out + '\n' : '') + 'Error: ' + error)
+    } else {
+      setOutput(out || '(no console output)')
+    }
   }
 
   function toggleMic() { setMicOn(o => { const n = !o; const s = awarenessRef.current.getLocalState() || {}; awarenessRef.current.setLocalState({ ...s, av: { ...s.av, mic: n } }); return n }) }

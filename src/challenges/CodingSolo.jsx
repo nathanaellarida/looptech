@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { runInSandbox } from './sandboxRunner';
 import * as Y from 'yjs';
 import Editor from "@monaco-editor/react";
 import { WebrtcProvider } from "y-webrtc";
@@ -264,15 +265,18 @@ const CodingSolo = () => {
     console.log(provider.awareness);                
   }
 
-  function handleRun() {
+  async function handleRun() {
     if (!editorRef.current) return
     const code = editorRef.current.getValue()
-    const logs = []
-    try {
-      const runner = new Function('console', `"use strict";\n${code}`)
-      runner({ log: (...args) => logs.push(args.join(' ')), error: (...args) => logs.push('Error:' + args.join(' ')) })
-      setOutput(logs.join('\n') || '(no console output)')
-    } catch (err) { setOutput('Error:' + err.toString()) }
+    // Executes in a shared sandboxed iframe/worker — never on the app origin.
+    const { output: out, error, timedOut } = await runInSandbox(code)
+    if (timedOut) {
+      setOutput('Error: Execution timed out (possible infinite loop).')
+    } else if (error) {
+      setOutput((out ? out + '\n' : '') + 'Error: ' + error)
+    } else {
+      setOutput(out || '(no console output)')
+    }
   }
 
   async function toggleCam() {

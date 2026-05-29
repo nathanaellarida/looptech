@@ -636,7 +636,7 @@
       </div>
       <div id="input-area">
         <input id="userInput" placeholder="Type a message..." />
-        <button id="sendButton" onclick="sendMessage()">
+        <button id="sendButton">
           <svg class="send-icon" viewBox="0 0 24 24">
             <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
           </svg>
@@ -645,7 +645,9 @@
     </div>
   </div>
 
-  <script>
+  <script type="module">
+    import { normalizeStoredChats, createChatItem } from './chatbot-history.js';
+
     // The chatbot no longer talks to Google directly and holds NO API key.
     // All model calls go through the same-origin server proxy at /api/chat,
     // which reads GEMINI_API_KEY exclusively from the server environment.
@@ -704,6 +706,7 @@
       document.getElementById('userInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendMessage();
       });
+      document.getElementById('sendButton').addEventListener('click', sendMessage);
       setupModalListeners();
     }
 
@@ -716,16 +719,6 @@
     function useExampleQuery(element) {
       document.getElementById('userInput').value = element.textContent;
       document.getElementById('userInput').focus();
-    }
-
-    function formatTimestamp(timestamp) {
-      const date = new Date(timestamp);
-      return date.toLocaleString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
     }
 
     function startNewChat() {
@@ -795,9 +788,10 @@
     }
 
     function loadChatHistory() {
-      const savedChats = localStorage.getItem('neomeai_chats');
-      if (savedChats) {
-        chats = JSON.parse(savedChats);
+      // localStorage is untrusted input: parse safely, validate, and cap.
+      const stored = normalizeStoredChats(localStorage.getItem('neomeai_chats'));
+      if (Object.keys(stored).length > 0) {
+        chats = stored;
         updateChatHistoryUI();
       } else {
         // Initialize with empty chat
@@ -831,26 +825,18 @@
       }
 
       sortedChats.forEach(([id, chat]) => {
-        const chatItem = document.createElement('div');
-        chatItem.className = `chat-item ${id === currentChatId ? 'active' : ''}`;
-        chatItem.dataset.id = id;
-        chatItem.innerHTML = `
-          <svg class="chat-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-          </svg>
-          <div style="flex: 1;">
-            <div class="title">${chat.title}</div>
-            <div class="timestamp">${formatTimestamp(chat.timestamp)}</div>
-          </div>
-          <button class="chat-options-btn" data-id="${id}" title="Options">
-            &#x22EE;
-          </button>
-        `;
+        // Untrusted title/timestamp are rendered via textContent (DOM APIs),
+        // never via HTML string interpolation — see chatbot-history.js.
+        const { item, optionsBtn } = createChatItem(document, {
+          id,
+          title: chat.title,
+          timestamp: chat.timestamp,
+          active: id === currentChatId,
+        });
 
-        chatItem.addEventListener('click', () => loadChat(id));
-        chatHistory.appendChild(chatItem);
+        item.addEventListener('click', () => loadChat(id));
+        chatHistory.appendChild(item);
 
-        const optionsBtn = chatItem.querySelector('.chat-options-btn');
         optionsBtn.addEventListener('click', (e) => {
           e.stopPropagation(); // prevent triggering the chat load
           showDeleteModal(id); // Use our custom modal instead of confirm()
