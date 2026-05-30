@@ -175,20 +175,18 @@ const CodingCollab = () => {
 
   const params = new URLSearchParams(window.location.search)
   const initialRoom = params.get('room')
-  const [roomId, setRoomId] = useState(initialRoom && isValidRoomId(initialRoom) ? initialRoom : createRoomId())
+  const [roomId] = useState(initialRoom && isValidRoomId(initialRoom) ? initialRoom : createRoomId())
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [inviteLink, setInviteLink] = useState('')
 
   const [activeTab, setActiveTab] = useState('title')
-  const [currentProblem, setCurrentProblem] = useState(1)
+  const [currentProblem] = useState(1)
 
   const [detectedEmotion, setDetectedEmotion] = useState(null);
   const [bubbleVisible, setBubbleVisible] = useState(false);
   const [bubbleMessage, setBubbleMessage] = useState("");
   const [bubbleEmotion, setBubbleEmotion] = useState(null);
-  const [hintText, setHintText] = useState(null);
-  
-  const leftPanelWidth = (showProblem || showChat) ? "26%" : "20px";
+  const [, setHintText] = useState(null);
 
   // Defining problems data:
   const problems = [

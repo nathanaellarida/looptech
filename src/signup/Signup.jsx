@@ -13,7 +13,7 @@ const Signup = () => {
   const [agreed, setAgreed] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [, setIsSuccess] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   const validateForm = () => {
@@ -80,7 +80,7 @@ const Signup = () => {
         setIsSuccess(false);
         setShowOnboarding(true);
       }, 1000);
-    } catch (error) {
+    } catch {
       setErrors({ submit: 'An error occurred during signup. Please try again.' });
     } finally {
       setIsLoading(false);

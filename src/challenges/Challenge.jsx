@@ -22,7 +22,7 @@ const CHALLENGE_DATA = [
   }
 ];
 
-const Challenge = ({ onNavigate }) => {
+const Challenge = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const navigate = useNavigate();

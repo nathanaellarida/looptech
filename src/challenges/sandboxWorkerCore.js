@@ -50,7 +50,7 @@ export function serialize(value, limits, depth, seen) {
         return k + ': ' + serialize(value[k], limits, depth + 1, nextSeen);
       });
       return '{' + parts.join(', ') + '}';
-    } catch (e) {
+    } catch {
       return '[Object]';
     }
   }

@@ -1,0 +1,26 @@
+version: 2
+updates:
+  # Frontend / Node dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      npm-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Python service dependencies
+  - package-ecosystem: "pip"
+    directory: "/python-server"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

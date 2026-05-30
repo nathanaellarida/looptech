@@ -21,8 +21,6 @@ const CodingCompete = () => {
 
   const editorRef = useRef(null);
   const awarenessRef = useRef(null);
-  const widgetsRef = useRef({});
-  const decorationsRef = useRef({});
 
   const [output, setOutput] = useState('')
 
@@ -50,13 +48,9 @@ const CodingCompete = () => {
   };
   
   const chatArrayRef = useRef(null)
-  const peersStream = useRef({})
   const wsRef = useRef(null)
   const pcRef = useRef({})
 
-  const ydocRef = useRef(new Y.Doc());
-  const providerRef = useRef(null);
-  
   const [chatMessages, setChatMessages] = useState([])
   const [chatInput, setChatInput] = useState('')
   
@@ -64,7 +58,7 @@ const CodingCompete = () => {
   const params = new URLSearchParams(window.location.search)
   const [myClientID, setMyClientID] = useState(null);
   const initialRoom = params.get('room')
-  const [roomId, setRoomId] = useState(initialRoom && isValidRoomId(initialRoom) ? initialRoom : createRoomId())
+  const [roomId] = useState(initialRoom && isValidRoomId(initialRoom) ? initialRoom : createRoomId())
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [inviteLink, setInviteLink] = useState('')
 
@@ -137,7 +131,7 @@ const CodingCompete = () => {
     window.location.href = `${window.location.pathname}?${q.toString()}`
   }
 
-  function handleEditorDidMount(editor, monaco) {
+  function handleEditorDidMount(editor) {
     editorRef.current = editor;
     const doc = new Y.Doc(); // a collection of shared objects -> Text
     const provider = new WebrtcProvider(roomId, doc, { signaling: getYjsSignaling() });
@@ -504,7 +498,6 @@ const CodingCompete = () => {
                 // only show the name for other‑people when it’s the first in a group
                 const showName = !isMe && !sameAsPrev
 
-                const peerState = awarenessRef.current?.getStates().get(msg.sender)
                 const userName = 'Anonymous'
                 
                 const bgColor = isMe ? '#db7e00' : '#e5e5ea'

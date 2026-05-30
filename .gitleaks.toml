@@ -1,0 +1,18 @@
+title = "LoopTech gitleaks config"
+
+# Build on gitleaks' maintained default rule set.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Non-secret placeholders, fixtures and examples"
+paths = [
+  '''\.env\.example$''',
+  '''SECURITY\.md$''',
+  '''README\.md$''',
+]
+# Placeholder values that are intentionally not real secrets.
+regexes = [
+  '''your-server-side-gemini-key-here''',
+  '''gemini-2\.0-flash''',
+]

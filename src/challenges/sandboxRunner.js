@@ -187,7 +187,7 @@ function browserTransport() {
     onMessage: function (cb) { listeners.push(cb); },
     reset: function () {
       window.removeEventListener('message', handle);
-      try { frame.remove(); } catch (e) {} // removing the frame terminates the worker
+      try { frame.remove(); } catch { /* noop */ } // removing the frame terminates the worker
     },
   };
 }

@@ -4,3 +4,4 @@
 # The unit tests stub the heavy OpenCV/Keras/TensorFlow runtime, so they can
 # run without a GPU or the full ML stack installed.
 pytest==8.3.3
+pip-audit==2.7.3

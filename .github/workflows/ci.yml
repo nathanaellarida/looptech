@@ -1,0 +1,43 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# Least privilege by default.
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Frontend (lint, test, build, audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      # Informational: report but do not block on residual advisories.
+      - run: npm audit --audit-level=high
+        continue-on-error: true
+
+  backend:
+    name: Backend (pytest, pip-audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: pip install -r python-server/requirements-dev.txt
+      # Tests stub the heavy ML stack, so the full runtime is not installed here.
+      - run: pip install fastapi httpx python-multipart numpy pytest
+      - run: pytest python-server/tests -q
+      - run: pip-audit -r python-server/requirements.txt
+        continue-on-error: true

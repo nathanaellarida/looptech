@@ -26,4 +26,14 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  {
+    // Node-side scripts and build/test config files use the Node runtime.
+    files: [
+      '**/*.config.js',
+      'js-server/**/*.js',
+    ],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+  },
 ])

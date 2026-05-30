@@ -151,7 +151,7 @@ const CodingSolo = () => {
   const [bubbleVisible, setBubbleVisible] = useState(false);
   const [bubbleMessage, setBubbleMessage] = useState("");
   const [bubbleEmotion, setBubbleEmotion] = useState(null);
-  const [hintText, setHintText] = useState(null);
+  const [, setHintText] = useState(null);
 
   const emotionGifs = {
     Angry: angryGif,
@@ -186,7 +186,6 @@ const CodingSolo = () => {
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                setShowProblem(true);
                 setHintText("💡 Hint placeholder text goes here!");
               }}
               style={{ color: "#fff", textDecoration: "underline" }}
@@ -263,7 +262,7 @@ const CodingSolo = () => {
     };
   }, []);
 
-  function handleEditorDidMount(editor, monaco) {
+  function handleEditorDidMount(editor) {
     editorRef.current = editor;
     // Initialize YJS
     const doc = new Y.Doc(); // a collection of shared objects -> Text
@@ -273,7 +272,7 @@ const CodingSolo = () => {
     const provider = new WebrtcProvider(createRoomId(), doc, { signaling: getYjsSignaling() });
     const type = doc.getText("monaco"); // doc { "monaco": "what our IDE is showing" }
     // Bind YJS to Monaco 
-    const binding = new MonacoBinding(type, editorRef.current.getModel(), new Set([editorRef.current]), provider.awareness);
+    new MonacoBinding(type, editorRef.current.getModel(), new Set([editorRef.current]), provider.awareness);
     awarenessRef.current = provider.awareness;
     console.log(provider.awareness);                
   }
@@ -447,7 +446,7 @@ const CodingSolo = () => {
         </div>
         {/* BUBBLE CHAT FOR EMOTIONS */}
         {bubbleVisible && (
-          <div style={{ position: "absolute", bottom: 250, left: (showProblem || showChat) ? '26%' : '20%', maxWidth: 300, background: "#db7e00", color: "#fff", padding: "12px 16px", borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.3)", zIndex: 9999, fontSize: 14, animation: "fadeInBubble 0.3s ease forwards", }} >
+          <div style={{ position: "absolute", bottom: 250, left: '20%', maxWidth: 300, background: "#db7e00", color: "#fff", padding: "12px 16px", borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.3)", zIndex: 9999, fontSize: 14, animation: "fadeInBubble 0.3s ease forwards", }} >
             <div style={{ display: "flex", alignItems: "center", gap: 8, }}>
               <img src={emotionGifs[bubbleEmotion]} alt={bubbleEmotion} style={{ width: 40, height: 40, objectFit: "contain" }} />
               <span>{bubbleMessage}</span>

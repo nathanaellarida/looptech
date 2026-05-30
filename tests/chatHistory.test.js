@@ -44,7 +44,7 @@ describe('normalizeStoredChats (untrusted localStorage parsing)', () => {
 describe('createChatItem stored-XSS regression', () => {
   const payloads = [
     '<img src=x onerror="window.__pwned = 1">',
-    '</div><script>window.__pwned = 1<\/script>',
+    '</div><scr' + 'ipt>window.__pwned = 1</scr' + 'ipt>',
     '<svg/onload=alert(1)>',
     '"><iframe src=javascript:alert(1)>',
   ]

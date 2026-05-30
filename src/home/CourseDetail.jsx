@@ -137,7 +137,7 @@ const CourseDetail = () => {
             </div>
             {/* Module List */}
             <div className="course-detail-list">
-              {COURSE_DETAIL.content.map((item, idx) => (
+              {COURSE_DETAIL.content.map((item) => (
                 <div className="course-detail-list-item" key={item.title}>
                   <span className="course-detail-list-title">{item.title}</span>
                   <span className="course-detail-list-icon-wrap">
