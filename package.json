@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"python python-server/server.py\" \"node js-server/signaling-server.js\" \"vite\"",
+    "dev": "concurrently \"python python-server/server.py --reload\" \"node js-server/signaling-server.js\" \"vite\"",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",

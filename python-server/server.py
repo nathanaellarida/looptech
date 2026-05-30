@@ -1,25 +1,43 @@
 # server.py
 import os
+import time
+import argparse
+import logging
+from collections import defaultdict, deque
 from functools import lru_cache
 
 import httpx
 import numpy as np
 import cv2
-import uvicorn
 import pathlib
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger("looptech.server")
 
 app = FastAPI()
 
-# Allow frontend access (tightened further in a later change).
+
+# ---------------------------------------------------------------------------
+# Configuration (all from the environment; safe, non-secret defaults)
+# ---------------------------------------------------------------------------
+def _parse_origins(raw: str) -> list[str]:
+    return [o.strip() for o in raw.split(",") if o.strip()]
+
+
+HOST = os.environ.get("HOST", "127.0.0.1")
+PORT = int(os.environ.get("PORT", "8000"))
+ALLOWED_ORIGINS = _parse_origins(os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173"))
+
+# CORS: exact-match allowlist, no credentials, only what the app uses.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
 
 BASE_DIR = pathlib.Path(__file__).resolve().parent
@@ -36,11 +54,17 @@ labels_dict = {
     6: 'Surprise',
 }
 
+# Upload limits (enforced before any expensive decoding/inference).
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
+MAX_UPLOAD_BYTES = 3 * 1024 * 1024          # 3 MiB
+MAX_IMAGE_PIXELS = 4_000_000                # ~4 MP, guards decompression bombs
+MAX_IMAGE_DIM = 4096
+
 
 @lru_cache(maxsize=1)
 def get_model():
-    # Imported and loaded lazily so the module can be imported (and unit
-    # tested) without the heavy TensorFlow/Keras runtime being present.
+    # Imported/loaded lazily so the module imports without the heavy
+    # TensorFlow/Keras runtime (and so unit tests can stub it out).
     from keras.models import load_model
     return load_model(str(MODEL_PATH))
 
@@ -51,10 +75,35 @@ def get_face_detector():
 
 
 # ---------------------------------------------------------------------------
-# Server-side Gemini proxy
+# Minimal in-memory rate limiter
 #
-# The browser never sees an API key. The key is read exclusively from the
-# server environment. The model is configurable and non-secret.
+# NOTE: this is per-process only. With multiple Uvicorn/Gunicorn workers each
+# worker has its own counters, so production behind multiple workers must use a
+# shared limiter (e.g. Redis) or an API gateway / reverse-proxy rate limit.
+# ---------------------------------------------------------------------------
+class SlidingWindowLimiter:
+    def __init__(self, max_requests: int, window_seconds: float):
+        self.max_requests = max_requests
+        self.window = window_seconds
+        self._hits: dict[str, deque] = defaultdict(deque)
+
+    def allow(self, key: str, now: float | None = None) -> bool:
+        now = time.monotonic() if now is None else now
+        q = self._hits[key]
+        cutoff = now - self.window
+        while q and q[0] < cutoff:
+            q.popleft()
+        if len(q) >= self.max_requests:
+            return False
+        q.append(now)
+        return True
+
+
+chat_limiter = SlidingWindowLimiter(max_requests=20, window_seconds=60.0)
+
+
+# ---------------------------------------------------------------------------
+# Server-side Gemini proxy (browser never sees a key)
 # ---------------------------------------------------------------------------
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
 GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models"
@@ -70,11 +119,17 @@ class ChatResponse(BaseModel):
     reply: str
 
 
+def _client_key(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
+
+
 @app.post("/api/chat", response_model=ChatResponse)
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, request: Request):
+    if not chat_limiter.allow(_client_key(request)):
+        raise HTTPException(status_code=429, detail="Too many requests. Please slow down.")
+
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        # Safe, non-leaking 503 when the assistant is not configured.
         raise HTTPException(status_code=503, detail="Chat assistant is not configured.")
 
     prompt = req.prompt.strip()
@@ -88,19 +143,18 @@ async def chat(req: ChatRequest):
                 url,
                 headers={
                     "Content-Type": "application/json",
-                    # Pass the key via the documented header, never the URL.
-                    "x-goog-api-key": api_key,
+                    "x-goog-api-key": api_key,  # documented header, never the URL
                 },
                 json={"contents": [{"parts": [{"text": prompt}]}]},
             )
     except httpx.HTTPError:
-        # Do not leak upstream error bodies, URLs, or the key.
+        logger.warning("Upstream chat request failed")  # no bodies, no key
         raise HTTPException(status_code=502, detail="Upstream request failed.")
 
     if resp.status_code != 200:
+        logger.warning("Upstream chat returned status %s", resp.status_code)
         raise HTTPException(status_code=502, detail="Upstream request failed.")
 
-    # Bound the parsed response size.
     body = resp.content[:MAX_UPSTREAM_BYTES]
     try:
         data = httpx.Response(200, content=body).json()
@@ -115,29 +169,78 @@ async def chat(req: ChatRequest):
     return ChatResponse(reply=str(reply)[:MAX_PROMPT_CHARS])
 
 
+# ---------------------------------------------------------------------------
+# Emotion detection
+# ---------------------------------------------------------------------------
+def _run_inference(gray_face) -> str:
+    resized = cv2.resize(gray_face, (48, 48))
+    normalize = resized / 255.0
+    reshaped = np.reshape(normalize, (1, 48, 48, 1))
+    result = get_model().predict(reshaped, verbose=0)
+    label = int(np.argmax(result, axis=1)[0])
+    return labels_dict.get(label)
+
+
 @app.post("/detect_emotion")
-async def detect_emotion(file: UploadFile = File(...)):
-    # Read uploaded image
+async def detect_emotion(request: Request, file: UploadFile = File(...)):
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(status_code=415, detail="Unsupported image type.")
+
     contents = await file.read()
+    if not contents:
+        raise HTTPException(status_code=400, detail="Empty upload.")
+    if len(contents) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="Image too large.")
+
     nparr = np.frombuffer(contents, np.uint8)
     frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    if frame is None:
+        raise HTTPException(status_code=400, detail="Invalid or unreadable image.")
 
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    faces = get_face_detector().detectMultiScale(gray, 1.3, 3)
+    h, w = frame.shape[:2]
+    if h > MAX_IMAGE_DIM or w > MAX_IMAGE_DIM or (h * w) > MAX_IMAGE_PIXELS:
+        raise HTTPException(status_code=413, detail="Image dimensions too large.")
 
-    emotion_label = None
-    for (x, y, w, h) in faces:
-        sub_face_img = gray[y:y + h, x:x + w]
-        resized = cv2.resize(sub_face_img, (48, 48))
-        normalize = resized / 255.0
-        reshaped = np.reshape(normalize, (1, 48, 48, 1))
-        result = get_model().predict(reshaped)
-        label = np.argmax(result, axis=1)[0]
-        emotion_label = labels_dict[label]
-        break  # just detect first face
+    try:
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faces = get_face_detector().detectMultiScale(gray, 1.3, 3)
+        emotion_label = None
+        if len(faces) > 0:
+            x, y, fw, fh = faces[0]
+            sub_face_img = gray[y:y + fh, x:x + fw]
+            # Blocking OpenCV/TensorFlow work runs off the event loop.
+            emotion_label = await run_in_threadpool(_run_inference, sub_face_img)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Emotion detection failed")  # full detail to logs only
+        raise HTTPException(status_code=500, detail="Could not process image.")
 
     return {"emotion": emotion_label}
 
 
+# ---------------------------------------------------------------------------
+# Health / readiness (reveal no secrets)
+# ---------------------------------------------------------------------------
+@app.get("/healthz")
+async def healthz():
+    return {"status": "ok"}
+
+
+@app.get("/readyz")
+async def readyz():
+    return {"status": "ready", "model_present": MODEL_PATH.exists()}
+
+
 if __name__ == "__main__":
-    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
+    parser = argparse.ArgumentParser(description="LoopTech emotion/chat server")
+    parser.add_argument(
+        "--reload",
+        action="store_true",
+        default=os.environ.get("RELOAD", "").lower() in ("1", "true", "yes"),
+        help="Enable auto-reload (development only).",
+    )
+    args = parser.parse_args()
+    import uvicorn
+    # Default: bind loopback, reload disabled. Dev script passes --reload.
+    uvicorn.run("server:app", host=HOST, port=PORT, reload=args.reload)
