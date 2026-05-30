@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { runInSandbox } from './sandboxRunner';
+import { getYjsSignaling, createRoomId } from './collab';
 import * as Y from 'yjs';
 import Editor from "@monaco-editor/react";
 import { WebrtcProvider } from "y-webrtc";
@@ -229,7 +230,8 @@ const CodingSolo = () => {
               formData.append("file", blob, "frame.jpg");
 
               try {
-                const res = await fetch("http://localhost:8000/detect_emotion", {
+                // Relative path: dev is proxied to the FastAPI server, prod is same-origin.
+                const res = await fetch("/detect_emotion", {
                   method: "POST",
                   body: formData,
                 });
@@ -252,12 +254,23 @@ const CodingSolo = () => {
     };
   }, [camOn]);
 
+  // Stop all camera/mic tracks when the component unmounts.
+  useEffect(() => {
+    return () => {
+      const stream = localStreamRef.current;
+      if (stream) stream.getTracks().forEach((t) => t.stop());
+      localStreamRef.current = null;
+    };
+  }, []);
+
   function handleEditorDidMount(editor, monaco) {
     editorRef.current = editor;
     // Initialize YJS
     const doc = new Y.Doc(); // a collection of shared objects -> Text
-    // Connect to peers (or start connection) with WebRTC
-    const provider = new WebrtcProvider("test-room", doc); // room1, room2
+    // Use a unique, unguessable room per session (never a shared "test-room")
+    // and an intentional, configurable signaling server instead of silently
+    // relying on y-webrtc's public default.
+    const provider = new WebrtcProvider(createRoomId(), doc, { signaling: getYjsSignaling() });
     const type = doc.getText("monaco"); // doc { "monaco": "what our IDE is showing" }
     // Bind YJS to Monaco 
     const binding = new MonacoBinding(type, editorRef.current.getModel(), new Set([editorRef.current]), provider.awareness);
@@ -291,9 +304,8 @@ const CodingSolo = () => {
 
     if (next) {
       try {
-        const stream = await startLocalStream();           // your helper
+        const stream = await startLocalStream();           // requests camera/mic (explicit user action)
         localStreamRef.current = stream;
-        startLocalStream(stream);                            // track it
         Object.values(pcRef.current).forEach(pc =>
           stream.getTracks().forEach(track => pc.addTrack(track, stream))
         );
@@ -314,7 +326,6 @@ const CodingSolo = () => {
         });
       }
       localStreamRef.current = null;
-      startLocalStream(null);                               // clear it
     }
 
     setCamOn(next);
@@ -421,6 +432,10 @@ const CodingSolo = () => {
               <button onClick={toggleCam} style={{ backgroundColor: '#f0f0f0', color: '#0f0f0f', borderRadius: '4px', border: 'none', cursor: 'pointer', padding: '6px 12px', }} >
                   { camOn ? 'Turn off Camera' : 'Turn on Camera' }
               </button>
+              <p className="text-gray-400 text-xs pt-1">
+                The camera stays off until you turn it on. While on, frames are periodically
+                sent to the emotion-detection server for analysis.
+              </p>
               <CameraPreview
                 camOn={camOn}
                 stream={localStreamRef.current}

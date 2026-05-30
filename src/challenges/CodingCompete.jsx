@@ -6,6 +6,7 @@ import * as Y from "yjs";
 import { WebrtcProvider } from "y-webrtc";
 import { MonacoBinding } from "y-monaco";
 import { MdSend, MdFileCopy, MdLink } from "react-icons/md";
+import { getSignalingUrl, getYjsSignaling, createRoomId, isValidRoomId, buildInviteUrl } from './collab';
 
 function getRandomUser() {
   const hue = Math.floor(Math.random() * 360)
@@ -13,21 +14,6 @@ function getRandomUser() {
     name: 'User-' + Math.floor(Math.random() * 1000),
     color: `hsla(${hue}, 70%, 80%, 0.6)`,
   }
-}
-
-function formatTime(seconds) {
-  const m = String(Math.floor(seconds / 60)).padStart(2, '0');
-  const s = String(seconds % 60).padStart(2, '0');
-  return `${m}:${s}`;
-}
-
-function makeRandomRoom(length = 8) {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
-  let s = ''
-  for (let i = 0; i < length; i++) {
-    s += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return s
 }
 
 const CodingCompete = () => {
@@ -74,9 +60,11 @@ const CodingCompete = () => {
   const [chatMessages, setChatMessages] = useState([])
   const [chatInput, setChatInput] = useState('')
   
+  const theme = 'dark' // this mode is dark-only; kept for shared modal styling
   const params = new URLSearchParams(window.location.search)
   const [myClientID, setMyClientID] = useState(null);
-  const [roomId, setRoomId] = useState(params.get('room') || makeRandomRoom())
+  const initialRoom = params.get('room')
+  const [roomId, setRoomId] = useState(initialRoom && isValidRoomId(initialRoom) ? initialRoom : createRoomId())
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [inviteLink, setInviteLink] = useState('')
 
@@ -139,27 +127,28 @@ const CodingCompete = () => {
     }
   
     const newRoom = new URLSearchParams(url.search).get('room')
-    if (!newRoom) {
-      alert('No “room=” parameter found in that link.')
+    if (!newRoom || !isValidRoomId(newRoom)) {
+      alert('That link does not contain a valid room id.')
       return
     }
-  
-    // 5) Navigate to the new room
-    window.location.href = `${window.location.pathname}?room=${newRoom}`
+
+    // 5) Navigate to the new room (validated room id, URL-encoded)
+    const q = new URLSearchParams({ room: newRoom })
+    window.location.href = `${window.location.pathname}?${q.toString()}`
   }
 
   function handleEditorDidMount(editor, monaco) {
     editorRef.current = editor;
     const doc = new Y.Doc(); // a collection of shared objects -> Text
-    const provider = new WebrtcProvider(roomId, doc); // room1, room2
+    const provider = new WebrtcProvider(roomId, doc, { signaling: getYjsSignaling() });
     const type = doc.getText("monaco"); // doc { "monaco": "what our IDE is showing" }
     const awareness = provider.awareness;
     awarenessRef.current = awareness;
-    
+
     awareness.setLocalStateField('user', getRandomUser())
     setMyClientID(awareness.clientID)
-    // Bind YJS to Monaco 
-    new MonacoBinding(ytext, editor.getModel(), new Set([editor]), awareness)
+    // Bind YJS to Monaco
+    new MonacoBinding(type, editor.getModel(), new Set([editor]), awareness)
     console.log(provider.awareness);     
     
     // right after you bind Monaco…
@@ -176,7 +165,7 @@ const CodingCompete = () => {
   }
 
   function setupSignaling() {
-    wsRef.current = new WebSocket(`ws://localhost:5174/ws`)
+    wsRef.current = new WebSocket(getSignalingUrl())
 
     wsRef.current.onopen = () => {
       wsRef.current.send(
@@ -326,10 +315,10 @@ const CodingCompete = () => {
               <span>Join Room</span>
           </button>
           <button 
-            onClick={() => { 
-              navigator.clipboard.writeText(window.location.href)
-              alert('Invite link copied to clipboard!') 
-            }} 
+            onClick={() => {
+              navigator.clipboard.writeText(buildInviteUrl(roomId))
+              alert('Invite link copied to clipboard!')
+            }}
             style={{ backgroundColor: '#0D0D0D', color: '#f0f0f0', border: '2px solid #db7e00', borderRadius: 12, display: 'flex', alignItems: 'center', cursor: 'pointer', gap: '6px', padding: '8px 12px', }} 
           >
             <MdFileCopy color='#db7e00' size={24}/>

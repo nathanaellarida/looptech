@@ -10,6 +10,7 @@ import * as Y from "yjs";
 import { WebrtcProvider } from "y-webrtc";
 import { MonacoBinding } from "y-monaco";
 import { runInSandbox } from './sandboxRunner';
+import { getSignalingUrl, getYjsSignaling, createRoomId, isValidRoomId, buildInviteUrl } from './collab';
 import angryGif from './../../images/emotions/angry.gif';
 import disgustGif from './../../images/emotions/disgust.gif';
 import fearGif from './../../images/emotions/fear.gif';
@@ -30,15 +31,6 @@ function formatTime(seconds) {
   const m = String(Math.floor(seconds / 60)).padStart(2, '0');
   const s = String(seconds % 60).padStart(2, '0');
   return `${m}:${s}`;
-}
-
-function makeRandomRoom(length = 8) {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
-  let s = ''
-  for (let i = 0; i < length; i++) {
-    s += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return s
 }
 
 function CameraPreview({ camOn, stream, detectedEmotion, emotionGifs }) {
@@ -182,7 +174,8 @@ const CodingCollab = () => {
   const [showChat, setShowChat] = useState(false)
 
   const params = new URLSearchParams(window.location.search)
-  const [roomId, setRoomId] = useState(params.get('room') || makeRandomRoom())
+  const initialRoom = params.get('room')
+  const [roomId, setRoomId] = useState(initialRoom && isValidRoomId(initialRoom) ? initialRoom : createRoomId())
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [inviteLink, setInviteLink] = useState('')
 
@@ -258,7 +251,8 @@ const CodingCollab = () => {
               formData.append("file", blob, "frame.jpg");
 
               try {
-                const res = await fetch("http://localhost:8000/detect_emotion", {
+                // Relative path: dev is proxied to the FastAPI server, prod is same-origin.
+                const res = await fetch("/detect_emotion", {
                   method: "POST",
                   body: formData,
                 });
@@ -281,12 +275,25 @@ const CodingCollab = () => {
     };
   }, [camOn]);
 
-  // After awareness gives us a client ID, init media & signaling
+  // After awareness gives us a client ID, connect signaling only.
+  // Camera/mic are NOT started here — they require an explicit user action
+  // (the Cam/Mic buttons), so no media is captured without consent.
   useEffect(() => {
     if (!myClientID) return
-    startLocalStream()
     setupSignaling()
   }, [myClientID])
+
+  // Stop all media tracks, peer connections and the socket on unmount.
+  useEffect(() => {
+    return () => {
+      const stream = localStreamRef.current
+      if (stream) stream.getTracks().forEach((t) => t.stop())
+      localStreamRef.current = null
+      Object.values(pcRef.current).forEach((pc) => { try { pc.close() } catch { /* noop */ } })
+      pcRef.current = {}
+      if (wsRef.current) { try { wsRef.current.close() } catch { /* noop */ } }
+    }
+  }, [])
 
   // Set timer to count down to 0
   useEffect(() => {
@@ -333,13 +340,14 @@ const CodingCollab = () => {
     }
   
     const newRoom = new URLSearchParams(url.search).get('room')
-    if (!newRoom) {
-      alert('No “room=” parameter found in that link.')
+    if (!newRoom || !isValidRoomId(newRoom)) {
+      alert('That link does not contain a valid room id.')
       return
     }
-  
-    // 5) Navigate to the new room
-    window.location.href = `${window.location.pathname}?room=${newRoom}`
+
+    // 5) Navigate to the new room (validated room id, URL-encoded)
+    const q = new URLSearchParams({ room: newRoom })
+    window.location.href = `${window.location.pathname}?${q.toString()}`
   }
 
   useEffect(() => {
@@ -384,7 +392,7 @@ const CodingCollab = () => {
   function handleEditorDidMount(editor, monaco) {
     editorRef.current = editor
     const doc = new Y.Doc()
-    const provider = new WebrtcProvider(roomId, doc)
+    const provider = new WebrtcProvider(roomId, doc, { signaling: getYjsSignaling() })
     const ytext = doc.getText("monaco")
     const awareness = provider.awareness
     awarenessRef.current = awareness
@@ -518,7 +526,7 @@ const CodingCollab = () => {
   }
 
   function setupSignaling() {
-    wsRef.current = new WebSocket(`ws://localhost:5174/ws`)
+    wsRef.current = new WebSocket(getSignalingUrl())
 
     wsRef.current.onopen = () => {
       wsRef.current.send(
@@ -675,9 +683,8 @@ const CodingCollab = () => {
 
     if (next) {
       try {
-        const stream = await startLocalStream();           // your helper
+        const stream = await startLocalStream();           // requests camera/mic (explicit user action)
         localStreamRef.current = stream;
-        startLocalStream(stream);                            // track it
         Object.values(pcRef.current).forEach(pc =>
           stream.getTracks().forEach(track => pc.addTrack(track, stream))
         );
@@ -698,12 +705,11 @@ const CodingCollab = () => {
         });
       }
       localStreamRef.current = null;
-      startLocalStream(null);                               // clear it
     }
 
     setCamOn(next);
   }
-  // —— RETURN THESE HTML/CSS VALUES TO THE main.jsx FILE FOR RENDERING ——  
+  // —— RETURN THESE HTML/CSS VALUES TO THE main.jsx FILE FOR RENDERING ——
   // RETURN JSX with applied theme
   return (
     <div className={`${fadeClass} ${theme}`} style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', overflow: 'hidden', backgroundColor: theme === 'dark' ? '#1e1e1e' : '#fff', color: theme === 'dark' ? '#fff' : '#000' }} >
@@ -726,10 +732,10 @@ const CodingCollab = () => {
             <span>Join Room</span>
           </button>
           <button 
-            onClick={() => { 
-              navigator.clipboard.writeText(window.location.href)
-              alert('Invite link copied to clipboard!') 
-            }} 
+            onClick={() => {
+              navigator.clipboard.writeText(buildInviteUrl(roomId))
+              alert('Invite link copied to clipboard!')
+            }}
             style={{ backgroundColor: theme === 'dark' ? '#0f0f0f' : '#f0f0f0', color: theme === 'dark' ? '#f0f0f0' : '#0f0f0f', border: '2px solid #db7e00', borderRadius: 12, display: 'flex', alignItems: 'center', cursor: 'pointer', gap: '6px', padding: '4px 12px', }} 
           >
             <MdFileCopy color='#db7e00' size={24}/>
@@ -1009,6 +1015,11 @@ const CodingCollab = () => {
             detectedEmotion={detectedEmotion}
             emotionGifs={emotionGifs}
           />
+          {/* Media privacy disclosure */}
+          <div style={{ padding: '4px 16px', fontSize: 11, color: '#999' }}>
+            Camera/mic start only when you press these buttons. While the camera is on,
+            frames are periodically sent to the emotion-detection server for analysis.
+          </div>
           {/* Microphone & Camera buttons */}
           <div style={{ padding: '8px 16px', borderTop: '1px solid #db7e00', display: 'flex', gap: '8px', justifyContent: 'flex-start', }}>
             <button onClick={toggleMic} style={{ backgroundColor: theme === 'dark' ? '#f0f0f0' : '#0f0f0f', color: theme === 'dark' ? '#0f0f0f' : '#f0f0f0', borderRadius: '4px', border: 'none', cursor: 'pointer', padding: '6px 12px', }} >
